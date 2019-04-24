@@ -1,19 +1,92 @@
-URL = "https://api.telegram.org/bot816372284:AAHdUL4I8e3aOarsS73boi67Fq8M2_5_XEQs/" % BOT_TOKEN
-MyURL = "https://culttosbot.herokuapp.com"
+# encoding: utf8
 
-api = requests.Session()
-application = tornado.web.Application([
-    (r"/", Handler),
-])
+import urllib
+import urllib2
+import time
+import json
+import sys
 
-if __name__ == '__main__':
-    signal.signal(signal.SIGTERM, signal_term_handler)
-    try:
-        set_hook = api.get(URL + "setWebhook?url=816372284:AAHdUL4I8e3aOarsS73boi67Fq8M2_5_XEQs" % MyURL)
-        if set_hook.status_code != 200:
-            logging.error("Can't set hook: 816372284:AAHdUL4I8e3aOarsS73boi67Fq8M2_5_XEQs. Quit." 816372284:AAHdUL4I8e3aOarsS73boi67Fq8M2_5_XEQ set_hook.text)
-            exit(1)
-        application.listen(8888)
-        tornado.ioloop.IOLoop.current().start()
-    except KeyboardInterrupt:
-        signal_term_handler(signal.SIGTERM, None)
+from poster.encode import multipart_encode
+from poster.streaminghttp import register_openers
+
+import subprocess
+
+from TelegramBot import (Bot)
+
+API = 'https://api.telegram.org/bot'
+TOKEN = '816372284:AAHdUL4I8e3aOarsS73boi67Fq8M2_5_XEQ'
+PAVEL = 94766527
+
+URL = API + TOKEN
+
+
+# noinspection PyPep8Naming
+def getUpdates():
+    get = URL + '/getUpdates'
+    response = urllib2.urlopen(get)
+    return response.read()
+
+
+INVALID_UPDATE_ID = 0
+
+global last_update_id
+last_update_id = INVALID_UPDATE_ID
+
+
+def getCommand():
+    js = json.loads(getUpdates())
+
+    update_obj = js['result'][-1]
+
+    global last_update_id
+    if last_update_id == INVALID_UPDATE_ID:
+        last_update_id = update_obj['update_id']
+        return None
+
+    if update_obj['update_id'] != last_update_id:
+        last_update_id = update_obj['update_id']
+        return update_obj['message']['text']
+    return None
+
+
+def sendMessage(chat_id, text):
+    sendMessage = {
+        'chat_id': chat_id,
+        'text': text
+    }
+    get = URL + '/sendMessage?' + urllib.urlencode(sendMessage)
+    response = urllib2.urlopen(get)
+
+
+def sendPhoto(chat_id, image_file):
+    register_openers()
+    values = {
+        'chat_id': chat_id,
+        'photo': open(image_file, 'rb')
+    }
+    data, headers = multipart_encode(values)
+    request = urllib2.Request(URL + '/sendPhoto?', data, headers)
+    response = urllib2.urlopen(request)
+
+
+# bot = Bot(TOKEN)
+# bot.sendMessage(PAVEL, 'Тест бота')
+# sys.exit(0)
+
+while True:
+    command = getCommand()
+    if None != command:
+
+        if 'screenshot' == command:
+            sendMessage(PAVEL, 'Щас сделаю, погодь')
+            time.sleep(1)
+            subprocess.Popen(['import', '-window', 'root', 'screenshot.png'])
+            time.sleep(3)
+            sendPhoto(PAVEL, 'screenshot.png')
+            time.sleep(1)
+            sendMessage(PAVEL, 'Поймал???')
+
+        if 'damn' == command:
+            sendMessage(PAVEL, "Нахуй пошёл!!!")
+
+    time.sleep(1)
